@@ -4,6 +4,10 @@
 - More optional pack libraries: Makin-Things (MIT), Tabler (MIT), Lucide (ISC), amCharts (CC BY 4.0).
 - Night variants for Rob's filled and Rob's outline packs.
 
+## 0.2.21 - 2026-11-02
+- New **OpenWeatherMap** weather source: only an API key field (masked); uses `https://api.openweathermap.org/data/3.0/onecall` with the hub (or custom) location and the tile's units. Same One Call parsing as the keyed provider. Needs a One Call API 3.0 subscription (free tier: 1,000 calls/day; OpenWeatherMap asks for a card on file).
+- Keyed provider unchanged; it and OpenWeatherMap now share one request helper. Device `source` attribute reads `owm` for the new option.
+
 ## 0.2.20 - 2026-10-29
 - New **current conditions** block on the tile, above the forecast: big icon (same pack and theme; night variant after sunset), bold temperature, condition text, feels-like and today's H/L, plus chips for Humidity, Wind (speed + direction) and Rain today.
 - Two new settings under Forecast content: **Show current conditions** (default **off**, so upgraded tiles keep their size; turn it on to get the taller tile) and **Show forecast** (default on). Both on: current above forecast; only one: just that part.

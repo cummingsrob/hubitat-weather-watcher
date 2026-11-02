@@ -1,6 +1,6 @@
 # Weather Watcher for Hubitat
 
-A multi-day weather forecast for Hubitat Elevation: a dashboard tile, plus a device whose weather attributes (conditions, highs and lows, rain chance and amount) you can use in rules. Pick Open-Meteo (worldwide, no key), the US National Weather Service (no key) or a keyed provider. The forecast is drawn as a crisp SVG with colored or outline icons, highs and lows, and rain chance and amount.
+A multi-day weather forecast for Hubitat Elevation: a dashboard tile, plus a device whose weather attributes (conditions, highs and lows, rain chance and amount) you can use in rules. Pick Open-Meteo (worldwide, no key), the US National Weather Service (no key), OpenWeatherMap (API key) or a keyed provider. The forecast is drawn as a crisp SVG with colored or outline icons, highs and lows, and rain chance and amount.
 
 <p align="center"><img src="docs/preview.png" alt="Weather Watcher preview: 7-day forecast strip" width="896"></p>
 
@@ -11,7 +11,7 @@ A multi-day weather forecast for Hubitat Elevation: a dashboard tile, plus a dev
 
 ![Current conditions above the forecast](docs/preview-current.png)
 
-**Version:** 0.2.20 ([changelog](CHANGELOG.md)). Requirements and roadmap: [REQUIREMENTS.md](REQUIREMENTS.md).
+**Version:** 0.2.21 ([changelog](CHANGELOG.md)). Requirements and roadmap: [REQUIREMENTS.md](REQUIREMENTS.md).
 
 ## Quick install
 1. **Hubitat Package Manager:** **Install** → **From a URL** → `https://raw.githubusercontent.com/cummingsrob/hubitat-weather-watcher/main/packageManifest.json`. HPM installs everything and turns on OAuth.
@@ -21,6 +21,7 @@ A multi-day weather forecast for Hubitat Elevation: a dashboard tile, plus a dev
 Other ways to install (bundle zip, or file by file) are below.
 
 ## Recent changes
+- **0.2.21:** **OpenWeatherMap** is its own weather source: paste an API key, the One Call 3.0 URL is preset.
 - **0.2.20:** optional **current conditions** block above the forecast (temperature, icon, condition, feels-like, H/L, humidity, wind, rain today), plus **Show forecast** / **Show current conditions** toggles, and current-weather device attributes.
 - **0.2.15:** first official Weather Watcher release naming: device network ids are `WWATCH-<app id>`; the dashboard attribute is `weatherWatcher`. Install fresh.
 - **0.2.12:** renamed to **Weather Watcher**. Apps: Weather Watcher Manager (parent) and Weather Watcher (child); driver: Weather Watcher Device. File names, library names, attributes and HPM ids are unchanged, so an HPM update keeps your existing apps, devices and settings.
@@ -77,7 +78,7 @@ HPM → **Install** → **From a URL** → `https://raw.githubusercontent.com/cu
 Create a new library (for example `cummingsrob.WeatherWatcherIconsMeteocons`) with a provider method returning `[packId: [label: "...", icons: [sunny: '<g>...</g>', ...]]]`, drawn in a 64x64 box using the CSS classes `cloud`, `light`, `precip`, `frozenPrecip`. Add `#include` for it in `WeatherWatcherInstance.groovy`, add the method name to `WW_ICON_PACK_PROVIDERS`, add the library to `LIBS` in `tools/build.py`, and run `python3 tools/build.py` to rebuild the bundles. Missing icon keys fall back (see `CONDITIONS`).
 
 ## Settings (per tile)
-- **Source:** Open-Meteo (default, global, no key), NWS/weather.gov (US only, no key), or a keyed provider (API base URL + key; OpenWeatherMap One Call 3.0 `daily` format).
+- **Source:** Open-Meteo (default, global, no key), NWS/weather.gov (US only, no key), OpenWeatherMap (API key only; One Call 3.0 URL preset; needs the free-tier One Call 3.0 subscription), or a keyed provider (API base URL + key; OpenWeatherMap One Call 3.0 `daily` format).
 - **Refresh interval:** 15 min, 30 min (default), 1 h, 3 h. Errors back off exponentially (up to 6 h; at least 1 h after HTTP 429) and keep the last good forecast, marked "(stale)".
 - **Location:** hub latitude/longitude by default; optional custom lat/lon and label.
 - **Units:** follow hub (default), imperial, or metric.

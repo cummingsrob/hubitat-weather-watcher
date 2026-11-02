@@ -54,7 +54,9 @@ mappings {
 // In-memory SVG cache (per app id). Rebuilt from state.forecast after a hub reboot; keeps big SVG out of state.
 // Entries are [hash: String, svg: String]; the hash is checked against state.svgHash before serving.
 @Field static java.util.concurrent.ConcurrentHashMap<String, Map> SVG_CACHE = new java.util.concurrent.ConcurrentHashMap<String, Map>()
+@Field static final String OWM_ONECALL_URL = "https://api.openweathermap.org/data/3.0/onecall"
 @Field static final Map SOURCES = ["open-meteo": "Open-Meteo (free, global, default)", "nws": "NWS / weather.gov (free, US only)",
+                                   "owm": "OpenWeatherMap (One Call 3.0, API key)",
                                    "custom": "Keyed provider (OpenWeatherMap One Call compatible)"]
 // Icon pack provider methods (each comes from an #include'd library; see WeatherWatcherIcons header)
 @Field static final List WW_ICON_PACK_PROVIDERS = ["wwIconPacks", "wwIconPacksOutline", "wwIconPacksMeteocons", "wwIconPacksMeteoconsAnimated", "wwIconPacksMono"]
@@ -114,6 +116,11 @@ def mainPage() {
                       defaultValue: "https://api.openweathermap.org/data/3.0/onecall",
                       description: "Called as BASE?lat=..&lon=..&units=..&appid=KEY&exclude=minutely,hourly,alerts"
                 input "customKey", "password", title: "API key", required: true, width: 4
+            }
+            if (settings.source == "owm") {
+                input "owmKey", "password", title: "OpenWeatherMap API key", required: true, width: 6,
+                      description: "Needs a One Call API 3.0 subscription (free tier: 1,000 calls/day)"
+                paragraph "Uses ${OWM_ONECALL_URL} with the location below."
             }
         }
         section("") {
@@ -311,6 +318,7 @@ def refreshForecast() {
     if (!settings.locationLabel && !(state.placeName && samePlace(state.placeKey)) && now() - ((state.placeTried ?: 0L) as Long) > 86400000L) lookupPlace()
     if (src == "nws") fetchNws()
     else if (src == "custom") fetchCustom()
+    else if (src == "owm") fetchOwm()
     else fetchOpenMeteo()
 }
 
@@ -526,12 +534,25 @@ private String nwsToCondition(String s) {
 
 private void fetchCustom() {
     if (!settings.customUrl || !settings.customKey) { onFailure("Custom provider needs an API base URL and key"); return }
-    Map q = [lat: lat(), lon: lon(), units: unitSys(), appid: settings.customKey, exclude: "minutely,hourly,alerts"]
-    asynchttpGet("handleCustom", [uri: settings.customUrl, query: q, contentType: "application/json", headers: ["Accept": "application/json"], timeout: 20])
+    fetchOneCall(settings.customUrl as String, settings.customKey as String, "custom")
+}
+
+private void fetchOwm() {
+    if (!settings.owmKey) { onFailure("OpenWeatherMap needs an API key"); return }
+    fetchOneCall(OWM_ONECALL_URL, settings.owmKey as String, "owm")
+}
+
+// One Call request shared by the OpenWeatherMap source and the generic keyed provider
+private void fetchOneCall(String url, String key, String src) {
+    Map q = [lat: lat(), lon: lon(), units: unitSys(), appid: key, exclude: "minutely,hourly,alerts"]
+    asynchttpGet("handleCustom", [uri: url, query: q, contentType: "application/json", headers: ["Accept": "application/json"], timeout: 20],
+                 [src: src])
 }
 
 def handleCustom(resp, data) {
-    if (!responseOk(resp, "Custom provider")) return
+    String src = (data instanceof Map && data?.src) ? data.src as String : "custom"
+    String who = src == "owm" ? "OpenWeatherMap" : "Custom provider"
+    if (!responseOk(resp, who)) return
     try {
         def j = respJson(resp)
         TimeZone tz = j.timezone ? TimeZone.getTimeZone(j.timezone as String) : location.timeZone
@@ -546,7 +567,7 @@ def handleCustom(resp, data) {
                            raw: c.weather ? c.weather[0].description : null, isDay: icon ? !icon.endsWith("n") : null,
                            time: c.dt ? new Date((c.dt as Long) * 1000L).format("yyyy-MM-dd'T'HH:mm:ssXXX", tz) : null])
             }
-        } catch (e) { logInfo "Custom provider current parse error: ${e}" }
+        } catch (e) { logInfo "${who} current parse error: ${e}" }
         List days = j.daily.collect { d ->
             Integer id = d.weather ? (d.weather[0].id as Integer) : null
             BigDecimal mm = ((d.rain ?: 0) as BigDecimal) + ((d.snow ?: 0) as BigDecimal)   // OWM reports mm in all unit systems
@@ -554,8 +575,8 @@ def handleCustom(resp, data) {
              pop: d.pop != null ? Math.round((d.pop as BigDecimal) * 100) : null,
              amt: metric ? mm : (mm / 25.4), cond: owmToCondition(id), raw: d.weather ? d.weather[0].description : null]
         }
-        onForecast(days, "custom")
-    } catch (e) { onFailure("Custom provider parse error (expects OpenWeatherMap One Call 'daily' format): ${e}") }
+        onForecast(days, src)
+    } catch (e) { onFailure("${who} parse error (expects OpenWeatherMap One Call 'daily' format): ${e}") }
 }
 
 private String owmToCondition(Integer id) {

@@ -15,7 +15,7 @@ definition(
     name: "Weather Watcher Manager",
     namespace: "cummingsrob",
     author: "Rob Cummings",
-    description: "Multi-day forecast strip tiles for Hubitat dashboards (Open-Meteo, NWS, or keyed provider).",
+    description: "Multi-day forecast strip tiles for Hubitat dashboards (Open-Meteo, NWS, OpenWeatherMap, or keyed provider).",
     category: "Convenience",
     singleInstance: true,
     installOnOpen: true,
